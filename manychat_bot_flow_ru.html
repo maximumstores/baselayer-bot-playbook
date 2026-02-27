@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ManyChat Bot Flow — BaseLayer Deals</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  
+  :root {
+    --bg: #0f1117;
+    --card: #1a1d27;
+    --card-hover: #3b82f6;
+    --card-inner: #232736;
+    --text: #e0e0e0;
+    --text-muted: #888;
+    --text-bubble: #d0d0d0;
+    --border: #2a2d3a;
+    --note-bg: #1a2332;
+    --note-text: #93c5fd;
+    --manager-bg: #1a2332;
+    --input-bg: #1e1540;
+    --action-bg: #2a1f0a;
+    --divider-bg: #2a1f0a;
+    --btn-secondary-bg: #2a2d3a;
+    --btn-secondary-text: #a0a0a0;
+    --btn-secondary-border: #3a3d4a;
+    --data-auto-border: #10b981;
+    --data-email-border: #3b82f6;
+    --data-paypal-border: #0070ba;
+  }
+
+  [data-theme="light"] {
+    --bg: #f0f2f5;
+    --card: #ffffff;
+    --card-hover: #3b82f6;
+    --card-inner: #f8f9fb;
+    --text: #1a1a1a;
+    --text-muted: #666;
+    --text-bubble: #333;
+    --border: #e0e0e0;
+    --note-bg: #eef4fb;
+    --note-text: #2563eb;
+    --manager-bg: #fff8ee;
+    --input-bg: #f3eeff;
+    --action-bg: #fff8ee;
+    --divider-bg: #ff6b00;
+    --divider-text: #ffffff;
+    --btn-secondary-bg: #f0f0f0;
+    --btn-secondary-text: #666;
+    --btn-secondary-border: #ddd;
+    --data-auto-border: #10b981;
+    --data-email-border: #3b82f6;
+    --data-paypal-border: #0070ba;
+    --manager-title-color: #c05600;
+    --action-text: #b45309;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 40px 20px;
+    transition: background 0.3s, color 0.3s;
+  }
+
+  .theme-toggle {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--card);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    z-index: 100;
+    transition: all 0.3s;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  .theme-toggle:hover {
+    transform: scale(1.1);
+    border-color: #3b82f6;
+  }
+
+  .title {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .title h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+  .title p {
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  .flow {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .connector {
+    width: 3px;
+    height: 40px;
+    background: #3b82f6;
+    margin: 0 auto;
+    position: relative;
+  }
+  .connector::after {
+    content: '▼';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #3b82f6;
+    font-size: 12px;
+  }
+
+  .connector.delay {
+    height: 60px;
+    background: repeating-linear-gradient(
+      to bottom,
+      #6366f1 0px,
+      #6366f1 6px,
+      transparent 6px,
+      transparent 12px
+    );
+  }
+  .connector.delay::after {
+    color: #6366f1;
+    content: '⏱';
+    font-size: 16px;
+    bottom: -12px;
+  }
+
+  .delay-label {
+    text-align: center;
+    color: #6366f1;
+    font-size: 13px;
+    font-weight: 600;
+    margin: 4px 0;
+  }
+
+  .step {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 24px;
+    border: 1px solid var(--border);
+    position: relative;
+    transition: border-color 0.2s, background 0.3s;
+  }
+
+  .step:hover {
+    border-color: var(--card-hover);
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .step-number {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .step-number.trigger { background: #3b82f6; color: #fff; }
+  .step-number.message { background: #10b981; color: #fff; }
+  .step-number.input { background: #8b5cf6; color: #fff; }
+  .step-number.delay-num { background: #6366f1; color: #fff; }
+  .step-number.paypal { background: #0070ba; color: #fff; }
+  .step-number.manager { background: #f59e0b; color: #000; }
+
+  .step-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text);
+  }
+
+  .step-type {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .type-trigger { background: #1e3a5f; color: #60a5fa; }
+  .type-message { background: #1a3a2a; color: #34d399; }
+  .type-input { background: #2d1f4e; color: #a78bfa; }
+  .type-delay { background: #1e1b4b; color: #818cf8; }
+  .type-manager { background: #3a2f1a; color: #fbbf24; }
+
+  .message-bubble {
+    background: var(--card-inner);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--text-bubble);
+    border-left: 3px solid #3b82f6;
+  }
+
+  .buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .btn {
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: default;
+  }
+
+  .btn-primary { background: #3b82f6; color: #fff; }
+  .btn-secondary { background: var(--btn-secondary-bg); color: var(--btn-secondary-text); border: 1px solid var(--btn-secondary-border); }
+  .btn-green { background: #10b981; color: #fff; }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  .tag-blue { background: #1e3a5f; color: #60a5fa; }
+  .tag-pink { background: #4a1942; color: #f472b6; }
+  .tag-green { background: #1a3a2a; color: #34d399; }
+  .tag-amber { background: #3a2f1a; color: #fbbf24; }
+
+  .action-box {
+    background: var(--action-bg);
+    border: 1px dashed #f59e0b;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    color: var(--action-text, #fbbf24);
+    margin-top: 8px;
+  }
+
+  .input-box {
+    background: var(--input-bg);
+    border: 1px dashed #8b5cf6;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    color: #a78bfa;
+    margin-top: 8px;
+  }
+
+  .manager-box {
+    background: var(--manager-bg);
+    border: 2px solid #f59e0b;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 8px;
+  }
+  .manager-box .manager-title {
+    color: var(--manager-title-color, #fbbf24);
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+  .manager-box .manager-text {
+    color: var(--text-bubble);
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  .branch-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 12px;
+  }
+
+  .branch {
+    flex: 1;
+    background: var(--card-inner);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--border);
+  }
+
+  .branch-label {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .note {
+    background: var(--note-bg);
+    border-left: 3px solid #3b82f6;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--note-text);
+  }
+
+  .red-placeholder {
+    color: #ef4444;
+    font-weight: 600;
+    font-style: italic;
+  }
+
+  .divider {
+    border: none;
+    border-top: 2px dashed #ff6b00;
+    margin: 30px 0;
+  }
+
+  .divider-label {
+    text-align: center;
+    color: var(--divider-text, #fbbf24);
+    font-size: 16px;
+    font-weight: 700;
+    margin: 20px 0;
+    padding: 8px 20px;
+    background: var(--divider-bg);
+    border-radius: 8px;
+    display: inline-block;
+    width: 100%;
+  }
+
+  .legend {
+    max-width: 900px;
+    margin: 40px auto 0;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  /* Data collection cards */
+  .data-card {
+    flex: 1;
+    min-width: 250px;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 24px;
+    transition: background 0.3s;
+  }
+  .data-card-inner {
+    background: var(--card-inner);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .data-card-inner .data-title {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .data-card-inner .data-desc {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" onclick="toggleTheme()" title="Переключить тему">🌙</button>
+
+<div class="title">
+  <h1>🤖 ManyChat Bot Flow — BaseLayer Deals</h1>
+  <p>Универсальный бот • Сбор базы + Менеджер распределяет ASIN • PayPal рефанд</p>
+</div>
+
+<div class="flow">
+
+  <!-- ============ АВТОМАТИЧЕСКАЯ ЧАСТЬ ============ -->
+  <div class="divider-label">🤖 АВТОМАТИЧЕСКАЯ ЧАСТЬ (бот)</div>
+
+  <!-- TRIGGER -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number trigger">⚡</div>
+      <div class="step-title">Триггер: Клик по рекламе Facebook</div>
+      <span class="step-type type-trigger">ТРИГГЕР</span>
+    </div>
+    <div class="action-box">
+      ⚙️ Действие: Добавить тег → <span class="tag tag-blue">bot_us</span> (или bot_de, bot_uk)
+    </div>
+  </div>
+
+  <div class="connector"></div>
+
+  <!-- MESSAGE 1 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number message">1</div>
+      <div class="step-title">Приветствие</div>
+      <span class="step-type type-message">СООБЩЕНИЕ</span>
+    </div>
+    <div class="message-bubble">
+      Hey! 👋 Want to test premium merino wool clothing for FREE?<br><br>
+      Here's how it works:<br>
+      Buy the product → Test it → Leave an honest review → Get a FULL refund 💰<br><br>
+      Interested?
+    </div>
+    <div class="buttons">
+      <div class="btn btn-primary">✅ Yes, I'm in!</div>
+      <div class="btn btn-secondary">ℹ️ Tell me more</div>
+    </div>
+    <div class="note">💡 "Tell me more" → краткое объяснение → возврат к "Yes, I'm in!"</div>
+  </div>
+
+  <div class="connector"></div>
+
+  <!-- MESSAGE 2 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number message">2</div>
+      <div class="step-title">Выбор пола</div>
+      <span class="step-type type-message">СООБЩЕНИЕ</span>
+    </div>
+    <div class="message-bubble">
+      Awesome! Are you shopping for:
+    </div>
+    <div class="buttons">
+      <div class="btn btn-primary">👩 Women's clothing</div>
+      <div class="btn btn-primary">👨 Men's clothing</div>
+    </div>
+    <div class="action-box">
+      ⚙️ Действие: Добавить тег → <span class="tag tag-pink">female</span> или <span class="tag tag-blue">male</span>
+    </div>
+  </div>
+
+  <div class="connector"></div>
+
+  <!-- MESSAGE 3 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number input">3</div>
+      <div class="step-title">Сбор Email</div>
+      <span class="step-type type-input">ВВОД</span>
+    </div>
+    <div class="message-bubble">
+      Great choice! 🙌 Drop your best email so we can keep you updated:
+    </div>
+    <div class="input-box">
+      📧 Поле ввода: Email → сохраняется в контакт ManyChat
+    </div>
+  </div>
+
+  <div class="connector"></div>
+
+  <!-- MESSAGE 4 — CONFIRMATION -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number message">4</div>
+      <div class="step-title">Подтверждение</div>
+      <span class="step-type type-message">СООБЩЕНИЕ</span>
+    </div>
+    <div class="message-bubble">
+      You're all set! ✅<br><br>
+      We'll send you a product to test very soon — keep an eye on your messages!<br><br>
+      Usually within a few hours 🙌
+    </div>
+    <div class="action-box">
+      ⚙️ Действие: Добавить тег → <span class="tag tag-green">new_contact</span><br>
+      ⚙️ Уведомление менеджеру → "Новый контакт: [имя], [пол]"
+    </div>
+  </div>
+
+  <!-- DIVIDER -->
+  <hr class="divider">
+  <div class="divider-label">👩‍💼 РУЧНАЯ ЧАСТЬ (менеджер в Live Chat)</div>
+
+  <div class="connector"></div>
+
+  <!-- STEP 5 — MANAGER ASSIGNS PRODUCT -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number manager">5</div>
+      <div class="step-title">Менеджер назначает продукт</div>
+      <span class="step-type type-manager">МЕНЕДЖЕР</span>
+    </div>
+    <div class="manager-box">
+      <div class="manager-title">👩‍💼 Что делает менеджер:</div>
+      <div class="manager-text">
+        1. Смотрит ASIN-трекер → какой ASIN нужен отзыв<br>
+        2. Смотрит тег контакта (male/female)<br>
+        3. Копирует шаблон → вставляет ключевые слова + фото<br>
+        4. Отправляет в Live Chat
+      </div>
+    </div>
+    <div class="message-bubble" style="margin-top: 12px;">
+      You're in! 🎉 Here's your first product to test:<br><br>
+      🔍 Step 1: Go to Amazon.com<br>
+      📋 Step 2: Copy and paste this into the search bar:<br><br>
+      <span class="red-placeholder">[ПОИСКОВЫЕ СЛОВА]</span><br><br>
+      🛒 Step 3: Find the product that looks like the photo below:<br><br>
+      <span class="red-placeholder">[ПРИКРЕПИТЬ ФОТО ПРОДУКТА]</span><br><br>
+      💳 Step 4: Buy it at full price<br><br>
+      After you receive and test it:<br>
+      ⭐ Leave an honest review on Amazon<br>
+      📸 Send us a screenshot of your review here<br>
+      💰 You'll get your FULL refund via PayPal within 24 hours!
+    </div>
+    <div class="action-box">
+      ⚙️ Действие: Добавить тег → <span class="tag tag-amber">asin_назначен</span> + <span class="tag tag-blue">asin_номер</span>
+    </div>
+  </div>
+
+  <div class="connector"></div>
+
+  <!-- STEP 6 — PURCHASE CONFIRMATION -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number manager">6</div>
+      <div class="step-title">Подтверждение покупки</div>
+      <span class="step-type type-manager">МЕНЕДЖЕР</span>
+    </div>
+    <div class="manager-box">
+      <div class="manager-title">👩‍💼 Клиент отвечает "I bought it!" или присылает Order ID</div>
+      <div class="manager-text">
+        Менеджер проверяет → отвечает:
+      </div>
+    </div>
+    <div class="message-bubble" style="margin-top: 12px;">
+      Awesome! 🙏 Thanks for your order!<br><br>
+      Take your time to test the product — we'll check back with you in about a week.<br><br>
+      Enjoy! 😊
+    </div>
+    <div class="action-box">
+      ⚙️ Действие: Добавить тег → <span class="tag tag-green">purchased</span><br>
+      ⚙️ Записать дату покупки в ASIN-трекер
+    </div>
+  </div>
+
+  <div class="connector delay"></div>
+  <div class="delay-label">⏱ 7–14 дней ожидания</div>
+
+  <!-- STEP 7 — REVIEW REQUEST -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number manager">7</div>
+      <div class="step-title">Запрос отзыва</div>
+      <span class="step-type type-manager">МЕНЕДЖЕР</span>
+    </div>
+    <div class="manager-box">
+      <div class="manager-title">👩‍💼 Прошло 7-14 дней. Менеджер отправляет напоминание:</div>
+    </div>
+    <div class="message-bubble" style="margin-top: 12px;">
+      Hey! 👋 How's the merino base layer? We hope you love it!<br><br>
+      Ready to leave your review? Here's how:<br><br>
+      1️⃣ Go to your Amazon orders<br>
+      2️⃣ Find the product and click "Write a review"<br>
+      3️⃣ Share your honest experience<br>
+      4️⃣ Send us a screenshot of the review here 👇<br><br>
+      Once confirmed → full refund via PayPal within 24h! 💰
+    </div>
+    <div class="buttons" style="margin-top: 8px;">
+      <div class="btn btn-green">✅ Done! Here's my review</div>
+      <div class="btn btn-secondary">⏳ I need more time</div>
+    </div>
+  </div>
+
+  <div class="connector"></div>
+
+  <!-- STEP 8 — REVIEW + PAYPAL -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number manager">8</div>
+      <div class="step-title">Скриншот отзыва + PayPal</div>
+      <span class="step-type type-manager">МЕНЕДЖЕР</span>
+    </div>
+    <div class="manager-box">
+      <div class="manager-title">👩‍💼 Клиент прислал скриншот отзыва. Менеджер запрашивает PayPal:</div>
+    </div>
+    <div class="message-bubble" style="margin-top: 12px;">
+      Thanks for the review! 🌟 We've verified it.<br><br>
+      Please send us your PayPal email so we can process your full refund:
+    </div>
+    <div class="input-box">
+      📧 Клиент отправляет PayPal email
+    </div>
+    <div class="action-box">
+      ⚙️ Действие: Добавить тег → <span class="tag tag-green">review_done</span>
+    </div>
+  </div>
+
+  <div class="connector"></div>
+
+  <!-- STEP 9 — REFUND -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number paypal">9</div>
+      <div class="step-title">Отправка рефанда</div>
+      <span class="step-type type-manager">МЕНЕДЖЕР</span>
+    </div>
+    <div class="manager-box">
+      <div class="manager-title">👩‍💼 Менеджер отправляет деньги на PayPal, потом пишет:</div>
+    </div>
+    <div class="message-bubble" style="margin-top: 12px;">
+      Your refund has been sent! ✅<br><br>
+      Please check your PayPal — you should receive it within a few hours.<br><br>
+      Thank you for being a tester! We'll message you when new products are available. 🚀<br><br>
+      Have a great day! 🙏
+    </div>
+    <div class="action-box">
+      ⚙️ Действие: Добавить тег → <span class="tag tag-green">refunded</span><br>
+      ⚙️ Обновить ASIN-трекер: +1 отзыв
+    </div>
+  </div>
+
+  <div class="connector"></div>
+
+  <!-- STEP 10 — REPEAT -->
+  <div class="step" style="border-color: #f59e0b;">
+    <div class="step-header">
+      <div class="step-number manager">🔄</div>
+      <div class="step-title">Повторный ASIN (по необходимости)</div>
+      <span class="step-type type-manager">МЕНЕДЖЕР</span>
+    </div>
+    <div class="manager-box">
+      <div class="manager-title">👩‍💼 Когда появляется новый ASIN для отзыва:</div>
+      <div class="manager-text">
+        Менеджер берёт контакт с тегом "refunded" → отправляет новый продукт.<br>
+        Один человек может тестировать несколько продуктов.
+      </div>
+    </div>
+    <div class="message-bubble" style="margin-top: 12px;">
+      Hey! 🎉 We have a new product for you to test!<br><br>
+      Same deal as before — buy, test, review, full refund via PayPal.<br><br>
+      🔍 Go to Amazon.com<br>
+      📋 Search for: <span class="red-placeholder">[ПОИСКОВЫЕ СЛОВА]</span><br>
+      🛒 Find this product: <span class="red-placeholder">[ФОТО]</span><br>
+      💳 Buy at full price<br><br>
+      Let me know when you've ordered! 👍
+    </div>
+  </div>
+
+</div>
+
+<!-- DATA COLLECTION -->
+<div class="flow" style="margin-top: 50px;">
+  <div class="divider-label">📋 КАКИЕ ДАННЫЕ СОБИРАЕМ</div>
+  
+  <div style="display: flex; gap: 20px; margin-top: 20px; flex-wrap: wrap;">
+    
+    <div class="data-card" style="border: 1px solid var(--data-auto-border);">
+      <div style="font-size: 16px; font-weight: 700; color: #34d399; margin-bottom: 16px;">✅ Автоматически (бесплатно)</div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="data-card-inner">
+          <div class="data-title">💬 Facebook Messenger</div>
+          <div class="data-desc">Основной канал связи. ManyChat работает через него.</div>
+        </div>
+        <div class="data-card-inner">
+          <div class="data-title">👤 Имя</div>
+          <div class="data-desc">Берётся из Facebook профиля автоматически.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-card" style="border: 1px solid var(--data-email-border);">
+      <div style="font-size: 16px; font-weight: 700; color: #60a5fa; margin-bottom: 16px;">📧 Собираем в боте (шаг 3)</div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="data-card-inner">
+          <div class="data-title">📧 Email</div>
+          <div class="data-desc">Для рассылок вне Messenger. Страховка если Facebook заблокирует аккаунт.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="data-card" style="border: 1px solid var(--data-paypal-border);">
+      <div style="font-size: 16px; font-weight: 700; color: #38bdf8; margin-bottom: 16px;">💰 Собираем позже (шаг 8)</div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="data-card-inner">
+          <div class="data-title">💳 PayPal email</div>
+          <div class="data-desc">Для отправки рефанда. Собираем только после скриншота отзыва.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div style="background: var(--note-bg); border-left: 3px solid #3b82f6; padding: 16px; border-radius: 0 8px 8px 0; margin-top: 20px; font-size: 13px; color: var(--note-text);">
+    💡 <strong>Принцип:</strong> Чем меньше спрашиваем в начале — тем больше людей дойдут до конца. Каждый дополнительный вопрос = минус 10-20% контактов. Поэтому PayPal собираем только когда человек уже оставил отзыв и ждёт деньги.
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#3b82f6"></div> Триггер</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#10b981"></div> Автосообщение</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#8b5cf6"></div> Ввод данных</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Менеджер (вручную)</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#6366f1"></div> Задержка</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#0070ba"></div> PayPal</div>
+</div>
+
+<script>
+function toggleTheme() {
+  const body = document.documentElement;
+  const btn = document.querySelector('.theme-toggle');
+  const current = body.getAttribute('data-theme');
+  if (current === 'light') {
+    body.removeAttribute('data-theme');
+    btn.textContent = '🌙';
+  } else {
+    body.setAttribute('data-theme', 'light');
+    btn.textContent = '☀️';
+  }
+}
+</script>
+
+</body>
+</html>
